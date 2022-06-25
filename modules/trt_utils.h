@@ -77,7 +77,7 @@ public:
 		return *this;
 	}
 
-    void log(nvinfer1::ILogger::Severity severity, const char* msg) override
+    void log(nvinfer1::ILogger::Severity severity, const char* msg) noexcept override
     {
         // suppress info-level messages
         if (severity == Severity::kINFO) return;
@@ -94,40 +94,41 @@ public:
     }
 };
 
-class YoloTinyMaxpoolPaddingFormula : public nvinfer1::IOutputDimensionsFormula
-{
+// // TODO: use PaddingMode
+// class YoloTinyMaxpoolPaddingFormula : public nvinfer1::IOutputDimensionsFormula
+// {
 
-private:
-    std::set<std::string> m_SamePaddingLayers;
+// private:
+//     std::set<std::string> m_SamePaddingLayers;
 
-    nvinfer1::DimsHW compute(nvinfer1::DimsHW inputDims, nvinfer1::DimsHW kernelSize,
-                             nvinfer1::DimsHW stride, nvinfer1::DimsHW padding,
-                             nvinfer1::DimsHW dilation, const char* layerName) const override
-    {
-     //   assert(inputDims.d[0] == inputDims.d[1]);
-        assert(kernelSize.d[0] == kernelSize.d[1]);
-        assert(stride.d[0] == stride.d[1]);
-        assert(padding.d[0] == padding.d[1]);
+//     nvinfer1::DimsHW compute(nvinfer1::DimsHW inputDims, nvinfer1::DimsHW kernelSize,
+//                              nvinfer1::DimsHW stride, nvinfer1::DimsHW padding,
+//                              nvinfer1::DimsHW dilation, const char* layerName) const override
+//     {
+//      //   assert(inputDims.d[0] == inputDims.d[1]);
+//         assert(kernelSize.d[0] == kernelSize.d[1]);
+//         assert(stride.d[0] == stride.d[1]);
+//         assert(padding.d[0] == padding.d[1]);
 
-		int output_h, output_w;
-        // Only layer maxpool_12 makes use of same padding
-        if (m_SamePaddingLayers.find(layerName) != m_SamePaddingLayers.end())
-        {
-            output_h = (inputDims.d[0] + 2 * padding.d[0]) / stride.d[0];
-            output_w = (inputDims.d[1] + 2 * padding.d[1]) / stride.d[1];
-        }
-        // Valid Padding
-        else
-        {
-            output_h = (inputDims.d[0] - kernelSize.d[0]) / stride.d[0] + 1;
-            output_w = (inputDims.d[1] - kernelSize.d[1]) / stride.d[1] + 1;
-        }
-        return nvinfer1::DimsHW{output_h, output_w};
-    }
+// 		int output_h, output_w;
+//         // Only layer maxpool_12 makes use of same padding
+//         if (m_SamePaddingLayers.find(layerName) != m_SamePaddingLayers.end())
+//         {
+//             output_h = (inputDims.d[0] + 2 * padding.d[0]) / stride.d[0];
+//             output_w = (inputDims.d[1] + 2 * padding.d[1]) / stride.d[1];
+//         }
+//         // Valid Padding
+//         else
+//         {
+//             output_h = (inputDims.d[0] - kernelSize.d[0]) / stride.d[0] + 1;
+//             output_w = (inputDims.d[1] - kernelSize.d[1]) / stride.d[1] + 1;
+//         }
+//         return nvinfer1::DimsHW{output_h, output_w};
+//     }
 
-public:
-    void addSamePaddingLayer(std::string input) { m_SamePaddingLayers.insert(input); }
-};
+// public:
+//     void addSamePaddingLayer(std::string input) { m_SamePaddingLayers.insert(input); }
+// };
 
 // Common helper functions
 cv::Mat blobFromDsImages(const std::vector<DsImage>& inputImages, const int& inputH,

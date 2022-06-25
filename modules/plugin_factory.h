@@ -50,13 +50,12 @@ cudaError_t cudaYoloLayerV3(const void* input, void* output, const uint32_t& bat
 	const uint32_t& numOutputClasses, const uint32_t& numBBoxes,
 	uint64_t outputSize, cudaStream_t stream);
 
-class PluginFactory : public nvinfer1::IPluginFactory
+class PluginFactory : public nvinfer1::IPluginCreator
 {
 
 public:
     PluginFactory();
-    nvinfer1::IPlugin* createPlugin(const char* layerName, const void* serialData,
-                                    size_t serialLength) override;
+    nvinfer1::IPluginV2* createPlugin(const char* layerName, nvinfer1::PluginFieldCollection const* fc) noexcept override;
     bool isPlugin(const char* name);
     void destroy();
 
@@ -73,19 +72,19 @@ private:
     nvinfer1::plugin::RegionParameters m_RegionParameters{m_NumBoxes, m_NumCoords, m_NumClasses,
                                                           nullptr};
 
-    struct INvPluginDeleter
-    {
-        void operator()(nvinfer1::plugin::INvPlugin* ptr)
-        {
-            if (ptr)
-            {
-                ptr->destroy();
-            }
-        }
-    };
+    // struct INvPluginDeleter
+    // {
+    //     void operator()(nvinfer1::plugin::INvPluginV2* ptr)
+    //     {
+    //         if (ptr)
+    //         {
+    //             ptr->destroy();
+    //         }
+    //     }
+    // };
     struct IPluginDeleter
     {
-        void operator()(nvinfer1::IPlugin* ptr)
+        void operator()(nvinfer1::IPluginV2* ptr)
         {
             if (ptr)
             {
@@ -93,32 +92,32 @@ private:
             }
         }
     };
-    typedef std::unique_ptr<nvinfer1::plugin::INvPlugin, INvPluginDeleter> unique_ptr_INvPlugin;
-    typedef std::unique_ptr<nvinfer1::IPlugin, IPluginDeleter> unique_ptr_IPlugin;
+    // typedef std::unique_ptr<nvinfer1::plugin::INvPlugin, INvPluginDeleter> unique_ptr_INvPlugin;
+    typedef std::unique_ptr<nvinfer1::IPluginV2, IPluginDeleter> unique_ptr_IPlugin;
 
-    unique_ptr_INvPlugin m_ReorgLayer;
-    unique_ptr_INvPlugin m_RegionLayer;
-    unique_ptr_INvPlugin m_LeakyReLULayers[m_MaxLeakyLayers];
+    // unique_ptr_INvPlugin m_ReorgLayer;
+    // unique_ptr_INvPlugin m_RegionLayer;
+    // unique_ptr_INvPlugin m_LeakyReLULayers[m_MaxLeakyLayers];
     unique_ptr_IPlugin m_YoloLayers[m_MaxYoloLayers];
 };
 
-class YoloLayerV3 : public nvinfer1::IPlugin
+class YoloLayerV3 : public nvinfer1::IPluginV2
 {
 public:
     YoloLayerV3(const void* data, size_t length);
     YoloLayerV3(const uint32_t& numBoxes, const uint32_t& numClasses, const uint32_t& grid_h_,const uint32_t &grid_w_);
-    int getNbOutputs() const override;
+    int getNbOutputs() const noexcept override;
     nvinfer1::Dims getOutputDimensions(int index, const nvinfer1::Dims* inputs,
-                                       int nbInputDims) override;
-    void configure(const nvinfer1::Dims* inputDims, int nbInputs, const nvinfer1::Dims* outputDims,
-                   int nbOutputs, int maxBatchSize) override;
-    int initialize() override;
-    void terminate() override;
-    size_t getWorkspaceSize(int maxBatchSize) const override;
-    int enqueue(int batchSize, const void* const* intputs, void** outputs, void* workspace,
-                cudaStream_t stream) override;
-    size_t getSerializationSize() override;
-    void serialize(void* buffer) override;
+                                       int nbInputDims) noexcept override;
+    void configureWithFormat(const nvinfer1::Dims* inputDims, int nbInputs, const nvinfer1::Dims* outputDims,
+                            int nbOutputs, nvinfer1::DataType type, nvinfer1::PluginFormat format, int maxBatchSize) noexcept override;
+    int initialize() noexcept override;
+    void terminate() noexcept override;
+    size_t getWorkspaceSize(int maxBatchSize) const noexcept override;
+    int enqueue(int batchSize, const void* const* intputs, void*const* outputs, void* workspace,
+                cudaStream_t stream) noexcept override;
+    size_t getSerializationSize() const noexcept override;
+    void serialize(void* buffer) const noexcept override;
 
 private:
     template <typename T>

@@ -30,37 +30,37 @@ namespace nvinfer1
 	{
 
 	}
-	int Chunk::getNbOutputs() const
+	int Chunk::getNbOutputs() const noexcept
 	{
 		return 2;
 	}
 
-	Dims Chunk::getOutputDimensions(int index, const Dims* inputs, int nbInputDims)
+	Dims Chunk::getOutputDimensions(int index, const Dims* inputs, int nbInputDims) noexcept
 	{
 		assert(nbInputDims == 1);
 		assert(index == 0 || index == 1);
 		return Dims3(inputs[0].d[0] / 2, inputs[0].d[1], inputs[0].d[2]);
 	}
 
-	int Chunk::initialize()
+	int Chunk::initialize() noexcept
 	{
 		return 0;
 	}
 
-	void Chunk::terminate()
+	void Chunk::terminate() noexcept
 	{
 	}
 
-	size_t Chunk::getWorkspaceSize(int maxBatchSize) const
+	size_t Chunk::getWorkspaceSize(int maxBatchSize) const noexcept
 	{
 		return 0;
 	}
 	
 	int Chunk::enqueue(int batchSize,
 		const void* const* inputs,
-		void** outputs,
+		void*const* outputs,
 		void* workspace,
-		cudaStream_t stream)
+		cudaStream_t stream) noexcept
 	{
 		//batch
 		for (int b = 0; b < batchSize; ++b)
@@ -73,54 +73,54 @@ namespace nvinfer1
 		return 0;
 	}
 
-	size_t Chunk::getSerializationSize() const
+	size_t Chunk::getSerializationSize() const noexcept
 	{
 		return sizeof(_n_size_split);
 	}
 
-	void Chunk::serialize(void *buffer)const
+	void Chunk::serialize(void *buffer)const noexcept
 	{
 		*reinterpret_cast<int*>(buffer) = _n_size_split;
 	}
 	
-	const char* Chunk::getPluginType()const
+	const char* Chunk::getPluginType()const noexcept
 	{
 		return "CHUNK_TRT";
 	}
-	const char* Chunk::getPluginVersion() const
+	const char* Chunk::getPluginVersion() const noexcept
 	{	
 		return "1.0";
 	}
 
-	void Chunk::destroy()
+	void Chunk::destroy() noexcept
 	{
 		delete this;
 	}
 	
-	void Chunk::setPluginNamespace(const char* pluginNamespace)
+	void Chunk::setPluginNamespace(const char* pluginNamespace) noexcept
 	{
 		_s_plugin_namespace = pluginNamespace;
 	}
 
-	const char* Chunk::getPluginNamespace() const
+	const char* Chunk::getPluginNamespace() const noexcept
 	{
 		return _s_plugin_namespace.c_str();
 	}
 
 	DataType Chunk::getOutputDataType(int index,
 		const nvinfer1::DataType* inputTypes,
-		int nbInputs) const
+		int nbInputs) const noexcept
 	{
 		assert(index == 0 || index == 1);
 		return DataType::kFLOAT;
 	}
 
-	bool Chunk::isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const
+	bool Chunk::isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const noexcept
 	{
 		return false;
 	}
 
-	bool Chunk::canBroadcastInputAcrossBatch(int inputIndex) const
+	bool Chunk::canBroadcastInputAcrossBatch(int inputIndex) const noexcept
 	{
 		return false;
 	}

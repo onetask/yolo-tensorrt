@@ -57,7 +57,7 @@ Int8EntropyCalibrator::Int8EntropyCalibrator(const uint32_t& batchSize, const st
 
 Int8EntropyCalibrator::~Int8EntropyCalibrator() { NV_CUDA_CHECK(cudaFree(m_DeviceInput)); }
 
-bool Int8EntropyCalibrator::getBatch(void* bindings[], const char* names[], int nbBindings)
+bool Int8EntropyCalibrator::getBatch(void* bindings[], const char* names[], int nbBindings) noexcept
 {
     if (m_ImageIndex + m_BatchSize >= m_ImageList.size()) return false;
 
@@ -78,7 +78,7 @@ bool Int8EntropyCalibrator::getBatch(void* bindings[], const char* names[], int 
     return true;
 }
 
-const void* Int8EntropyCalibrator::readCalibrationCache(size_t& length)
+const void* Int8EntropyCalibrator::readCalibrationCache(size_t& length) noexcept
 {
     void* output;
     m_CalibrationCache.clear();
@@ -105,7 +105,7 @@ const void* Int8EntropyCalibrator::readCalibrationCache(size_t& length)
     return output;
 }
 
-void Int8EntropyCalibrator::writeCalibrationCache(const void* cache, size_t length)
+void Int8EntropyCalibrator::writeCalibrationCache(const void* cache, size_t length) noexcept
 {
     assert(!m_CalibTableFilePath.empty());
     std::ofstream output(m_CalibTableFilePath, std::ios::binary);
