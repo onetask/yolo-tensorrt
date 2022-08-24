@@ -17,7 +17,8 @@ find_package(CUDA REQUIRED)
 find_package(OpenCV REQUIRED)
 
 #detector lib (cuda)
-file(GLOB_RECURSE sources modules/*.hpp modules/*.cpp modules/*.h modules/*.cu extra/*.h)
+file(GLOB_RECURSE headers modules/*.hpp modules/*.h extra/*.hpp extra/*.h)
+file(GLOB_RECURSE sources modules/*.cpp modules/*.cu ${headers})
 add_library(detector SHARED ${sources})
 target_include_directories(detector PRIVATE extra/ modules/ ${OpenCV_INCLUDE_DIRS} ${CUDA_TOOLKIT_ROOT_DIR}/include)
 target_link_libraries(detector nvinfer nvinfer_plugin nvparsers "stdc++fs")
@@ -27,5 +28,10 @@ add_executable(yolo-trt samples/sample_detector.cpp)
 target_include_directories(yolo-trt PRIVATE modules/ extra/)
 target_link_libraries(yolo-trt detector ${OpenCV_LIBS})
 
-
-
+set_target_properties(detector PROPERTIES
+    PUBLIC_HEADER "${headers}"
+)
+install(TARGETS detector
+        PUBLIC_HEADER
+          DESTINATION /usr/local/include/yolo-tensorrt/
+)
