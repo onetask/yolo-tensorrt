@@ -10,8 +10,8 @@
 #include "yolov4.h"
 #include "yolov5.h"
 
-#include <experimental/filesystem>
 #include <fstream>
+#include <algorithm>
 #include <string>
 #include <chrono>
 #include <stdio.h>  /* defines FILENAME_MAX */
@@ -105,6 +105,9 @@ private:
 		_yolo_info.wtsFilePath = _config.file_model_weights;
 		_yolo_info.precision = _vec_precision[_config.inference_precison];
 		_yolo_info.deviceType = "kGPU";
+		_yolo_info.enginePath = _config.engine_file_path;
+		_yolo_info.maxBatchSize = std::max(1, _config.max_batch_size);
+		_yolo_info.workspaceSizeBytes = _config.workspace_size_bytes;
 		auto npos = _yolo_info.wtsFilePath.find(".weights");
 		assert(npos != std::string::npos
 			&& "wts file file not recognised. File needs to be of '.weights' format");

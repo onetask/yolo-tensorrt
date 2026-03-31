@@ -94,7 +94,7 @@ namespace nvinfer1
 		re(d, _n_grid_h);
 		re(d, _n_grid_w);
 		re(d, m_OutputSize);
-		assert(d = a + length);
+		assert(d == a + length);
 	}
 	void YoloLayer::serialize(void* buffer)const noexcept
 	{
@@ -107,17 +107,41 @@ namespace nvinfer1
 		assert(d == a + getSerializationSize());
 	}
 
-	bool YoloLayer::supportsFormat(DataType type, PluginFormat format) const noexcept
+	bool YoloLayer::supportsFormatCombination(int pos, const PluginTensorDesc* inOut, int nbInputs, int nbOutputs) const noexcept
 	{
-		return (type == DataType::kFLOAT && format == PluginFormat::kLINEAR);
+		return inOut[pos].type == DataType::kFLOAT && inOut[pos].format == TensorFormat::kLINEAR;
 	}
 
-	void YoloLayer::configureWithFormat(const Dims* inputDims, int nbInputs, const Dims* outputDims, int nbOutputs, DataType type, PluginFormat format, int maxBatchSize) noexcept
+	void YoloLayer::configurePlugin(const DynamicPluginTensorDesc* in, int nbInputs,
+		const DynamicPluginTensorDesc* out, int nbOutputs) noexcept
 	{
-
 	}
 
-	IPluginV2* YoloLayer::clone() const noexcept
+	DataType YoloLayer::getOutputDataType(int index, const DataType* inputTypes, int nbInputs) const noexcept
+	{
+		return DataType::kFLOAT;
+	}
+
+	bool YoloLayer::isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const noexcept
+	{
+		return false;
+	}
+
+	bool YoloLayer::canBroadcastInputAcrossBatch(int inputIndex) const noexcept
+	{
+		return false;
+	}
+
+	void YoloLayer::attachToContext(cudnnContext* cudnnContext, cublasContext* cublasContext,
+		IGpuAllocator* gpuAllocator) noexcept
+	{
+	}
+
+	void YoloLayer::detachFromContext() noexcept
+	{
+	}
+
+	IPluginV2DynamicExt* YoloLayer::clone() const noexcept
 	{
 		YoloLayer *p = new YoloLayer(m_NumBoxes,m_NumClasses,_n_grid_h,_n_grid_w);
 		p->setPluginNamespace(_s_plugin_namespace.c_str());
@@ -139,8 +163,8 @@ namespace nvinfer1
 
 	int YoloLayer::getNbOutputs() const noexcept { return 1; }
 
-	nvinfer1::Dims YoloLayer::getOutputDimensions(int index, const nvinfer1::Dims* inputs,
-		int nbInputDims) noexcept
+	nvinfer1::DimsExprs YoloLayer::getOutputDimensions(int index, const nvinfer1::DimsExprs* inputs,
+		int nbInputDims, nvinfer1::IExprBuilder& exprBuilder) noexcept
 	{
 		assert(index == 0);
 		assert(nbInputDims == 1);
@@ -158,17 +182,19 @@ namespace nvinfer1
 
 	void YoloLayer::terminate() noexcept {}
 
-	size_t YoloLayer::getWorkspaceSize(int maxBatchSize) const noexcept
+	size_t YoloLayer::getWorkspaceSize(const PluginTensorDesc* inputs, int nbInputs,
+		const PluginTensorDesc* outputs, int nbOutputs) const noexcept
 	{
 		return 0;
 	}
 
-	int YoloLayer::enqueue(int batchSize,
+	int YoloLayer::enqueue(const PluginTensorDesc* inputDesc, const PluginTensorDesc* outputDesc,
 		const void* const* inputs,
 		void* const* outputs,
 		void* workspace,
 		cudaStream_t stream) noexcept
 	{
+		const int batchSize = inputDesc[0].dims.d[0];
 		NV_CUDA_CHECK(cudaYoloLayerV3(inputs[0], outputs[0], batchSize, _n_grid_h, _n_grid_w, m_NumClasses,
 			m_NumBoxes, m_OutputSize, stream));
 		return 0;
@@ -200,7 +226,7 @@ namespace nvinfer1
 
 	const char* YoloLayerPluginCreator::getPluginVersion() const noexcept
 	{
-		return "1.0";
+		return "2.0";
 	}
 
 	const PluginFieldCollection* YoloLayerPluginCreator::getFieldNames()noexcept

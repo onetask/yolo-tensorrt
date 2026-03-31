@@ -23,7 +23,7 @@ SOFTWARE.
 *
 */
 #include "ds_image.h"
-#include <experimental/filesystem>
+#include <filesystem>
 
 DsImage::DsImage() :
     m_Height(0),
@@ -103,7 +103,7 @@ DsImage::DsImage(const std::string& path, const std::string &s_net_type_, const 
 	m_RNG(cv::RNG(unsigned(std::time(0)))),
 	m_ImageName()
 {
-	m_ImageName = std::experimental::filesystem::path(path).stem().string();
+	m_ImageName = std::filesystem::path(path).stem().string();
 	m_OrigImage = cv::imread(path, cv::IMREAD_UNCHANGED);
 	m_Height = m_OrigImage.rows;
 	m_Width = m_OrigImage.cols;

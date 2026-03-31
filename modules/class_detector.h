@@ -2,6 +2,7 @@
 #define CLASS_DETECTOR_H_
 
 #include "API.h"
+#include <cstddef>
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
@@ -34,11 +35,17 @@ struct Config
 
 	std::string file_model_weights				= "configs/yolov4.weights";
 
+	std::string engine_file_path				= "";
+
 	float detect_thresh							= 0.9;
 
 	ModelType	net_type						= YOLOV4;
 
 	Precision	inference_precison				= FP32;
+
+	int	max_batch_size							= 1;
+
+	std::size_t workspace_size_bytes			= 1ULL << 30;
 	
 	int	gpu_id									= 0;
 

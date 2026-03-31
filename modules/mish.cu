@@ -36,24 +36,12 @@ namespace nvinfer1
         return 0;
     }
 
-	bool MishPlugin::supportsFormat(DataType type, PluginFormat format) const noexcept
-	{
-		return (type == DataType::kFLOAT && format == PluginFormat::kLINEAR);
-	}
-
-	void MishPlugin::configureWithFormat(const Dims* inputDims, int nbInputs,
-		const Dims* outputDims, int nbOutputs, DataType type, PluginFormat format, int maxBatchSize) noexcept
-	{
-
-	}
-
-    Dims MishPlugin::getOutputDimensions(int index, const Dims* inputs, int nbInputDims)noexcept
+    DimsExprs MishPlugin::getOutputDimensions(int index, const DimsExprs* inputs, int nbInputDims,
+        IExprBuilder& exprBuilder) noexcept
     {
         assert(nbInputDims == 1);
         assert(index == 0);
-        input_size_ = inputs[0].d[0] * inputs[0].d[1] * inputs[0].d[2];
-        // Output dimensions
-        return Dims3(inputs[0].d[0], inputs[0].d[1], inputs[0].d[2]);
+        return inputs[0];
     }
 
     // Set plugin namespace
@@ -64,7 +52,7 @@ namespace nvinfer1
 
     const char* MishPlugin::getPluginNamespace() const noexcept
     {
-        return mPluginNamespace;
+        return mPluginNamespace.c_str();
     }
 
     // Return the DataType of the plugin output at the requested index
@@ -85,8 +73,14 @@ namespace nvinfer1
         return false;
     }
 
-    void MishPlugin::configurePlugin(const PluginTensorDesc* in, int nbInput, const PluginTensorDesc* out, int nbOutput)noexcept
+    void MishPlugin::configurePlugin(const DynamicPluginTensorDesc* in, int nbInput, const DynamicPluginTensorDesc* out, int nbOutput)noexcept
     {
+        const auto& dims = in[0].desc.dims;
+        input_size_ = 1;
+        for (int dim = 1; dim < dims.nbDims; ++dim)
+        {
+            input_size_ *= dims.d[dim];
+        }
     }
 
     // Attach the plugin object to an execution context and grant the plugin the access to some context resource.
@@ -104,7 +98,7 @@ namespace nvinfer1
 
     const char* MishPlugin::getPluginVersion() const noexcept
     {
-        return "1";
+        return "2.0";
     }
 
     void MishPlugin::destroy()noexcept
@@ -113,11 +107,11 @@ namespace nvinfer1
     }
 
     // Clone the plugin
-    IPluginV2* MishPlugin::clone() const noexcept
+    IPluginV2DynamicExt* MishPlugin::clone() const noexcept
     {
         MishPlugin *p = new MishPlugin();
         p->input_size_ = input_size_;
-        p->setPluginNamespace(mPluginNamespace);
+        p->setPluginNamespace(mPluginNamespace.c_str());
         return p;
     }
 
@@ -155,12 +149,13 @@ namespace nvinfer1
         mish_kernel<<<grid_size, block_size>>>(inputs[0], output, input_size_ * batchSize);
     }
 
-	int MishPlugin::enqueue(int batchSize,
+	int MishPlugin::enqueue(const PluginTensorDesc* inputDesc, const PluginTensorDesc* outputDesc,
 		const void* const* inputs,
 		void* const* outputs,
 		void* workspace,
 		cudaStream_t stream) noexcept 
 	{
+        const int batchSize = inputDesc[0].dims.d[0];
         //assert(batchSize == 1);
         //GPU
         //CUDA_CHECK(cudaStreamSynchronize(stream));
@@ -186,7 +181,7 @@ namespace nvinfer1
 
     const char* MishPluginCreator::getPluginVersion() const noexcept
     {
-            return "1";
+            return "2.0";
     }
 
     const PluginFieldCollection* MishPluginCreator::getFieldNames()noexcept
@@ -223,4 +218,3 @@ namespace nvinfer1
 
 
 }
-

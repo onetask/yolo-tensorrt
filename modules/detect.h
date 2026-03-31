@@ -21,7 +21,7 @@ namespace nvinfer1
 		buffer += sizeof(T);
 	}
 
-	class Detect :public IPluginV2
+	class Detect :public IPluginV2DynamicExt
 	{
 	public:
 		Detect();
@@ -34,10 +34,8 @@ namespace nvinfer1
 		{
 			return 1;
 		}
-		Dims getOutputDimensions(int index, const Dims* inputs, int nbInputDims) noexcept  override
-		{
-			return inputs[0];
-		}
+		DimsExprs getOutputDimensions(int index, const DimsExprs* inputs, int nbInputDims,
+			IExprBuilder& exprBuilder) noexcept  override;
 		int initialize() noexcept  override
 		{
 			return 0;
@@ -45,15 +43,11 @@ namespace nvinfer1
 		void terminate() noexcept  override
 		{
 		}
-		size_t getWorkspaceSize(int maxBatchSize) const noexcept  override
-		{
-			return 0;
-		}
-		int enqueue(int batchSize, const void* const* inputs, void* const* outputs, void* workspace,
+		size_t getWorkspaceSize(const PluginTensorDesc* inputs, int nbInputs, const PluginTensorDesc* outputs,
+			int nbOutputs) const noexcept  override;
+		int enqueue(const PluginTensorDesc* inputDesc, const PluginTensorDesc* outputDesc,
+			const void* const* inputs, void* const* outputs, void* workspace,
 			cudaStream_t stream) noexcept override;
-
-		bool supportsFormat(DataType type, PluginFormat format) const noexcept override;
-		void configureWithFormat(const Dims* inputDims, int nbInputs, const Dims* outputDims, int nbOutputs, DataType type, PluginFormat format, int maxBatchSize) noexcept override;
 
 		size_t getSerializationSize() const noexcept  override;
 		void serialize(void* buffer) const noexcept  override;
@@ -63,7 +57,7 @@ namespace nvinfer1
 		}
 		const char* getPluginVersion() const noexcept  override
 		{
-			return "1.0";
+			return "2.0";
 		}
 		void destroy() noexcept  override
 		{
@@ -77,29 +71,18 @@ namespace nvinfer1
 		{
 			return _s_plugin_namespace.c_str();
 		}
-		DataType getOutputDataType(int index, const nvinfer1::DataType* inputTypes, int nbInputs) const noexcept
-		{
-			return DataType::kFLOAT;
-		}
-		bool isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const noexcept
-		{
-			return false;
-		}
-		bool canBroadcastInputAcrossBatch(int inputIndex) const noexcept
-		{
-			return false;
-		}
+		DataType getOutputDataType(int index, const nvinfer1::DataType* inputTypes, int nbInputs) const noexcept override;
+		bool isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const noexcept override;
+		bool canBroadcastInputAcrossBatch(int inputIndex) const noexcept override;
 		void attachToContext(
-			cudnnContext* cudnnContext, cublasContext* cublasContext, IGpuAllocator* gpuAllocator)
-		{}
-		void configurePlugin(const PluginTensorDesc* in, int nbInput, const PluginTensorDesc* out, int nbOutput) ;
-		void detachFromContext()
-		{}
-		bool supportsFormatCombination(int pos, const PluginTensorDesc* inOut, int nbInputs, int nbOutputs) const noexcept
+			cudnnContext* cudnnContext, cublasContext* cublasContext, IGpuAllocator* gpuAllocator) noexcept override;
+		void configurePlugin(const DynamicPluginTensorDesc* in, int nbInput, const DynamicPluginTensorDesc* out, int nbOutput) noexcept override;
+		void detachFromContext() noexcept override;
+		bool supportsFormatCombination(int pos, const PluginTensorDesc* inOut, int nbInputs, int nbOutputs) const noexcept override
 		{
 			return inOut[pos].format == TensorFormat::kLINEAR && inOut[pos].type == DataType::kFLOAT;
 		}
-		IPluginV2* clone() const noexcept override;
+		IPluginV2DynamicExt* clone() const noexcept override;
 	private:
 		
 		uint32_t _n_anchor;

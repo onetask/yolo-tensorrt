@@ -36,8 +36,6 @@ SOFTWARE.
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "mish.h"
-#include "chunk.h"
-#include "hardswish.h"
 #include <set>
 #include <math.h>
 #include <algorithm> 
@@ -190,10 +188,6 @@ nvinfer1::ILayer* netAddUpsample(int layerIdx, std::map<std::string, std::string
                                  nvinfer1::ITensor* input, nvinfer1::INetworkDefinition* network);
 void printLayerInfo(std::string layerIndex, std::string layerName, std::string layerInput,
                     std::string layerOutput, std::string weightPtr);
-
-nvinfer1::ILayer * layer_split(const int n_layer_index_,
-	nvinfer1::ITensor *input_,
-	nvinfer1::INetworkDefinition* network);
 
 std::vector<int> parse_int_list(const std::string s_args_);
 

@@ -35,6 +35,7 @@ SOFTWARE.
 #include "NvInferRuntimeCommon.h"
 #include "cuda_runtime_api.h"
 #include <algorithm>
+#include <cstddef>
 #include <cmath>
 #include <stdint.h>
 #include <string>
@@ -59,6 +60,8 @@ struct NetworkInfo
     std::string enginePath;
     std::string inputBlobName;
 	std::string data_path;
+    uint32_t maxBatchSize{1};
+    std::size_t workspaceSizeBytes{1ULL << 30};
 };
 
 /**
@@ -151,14 +154,17 @@ protected:
     // TRT specific members
 	//Logger glogger;
     uint32_t m_BatchSize = 1;
+    uint32_t m_MaxBatchSize = 1;
+    std::size_t m_WorkspaceSizeBytes = 1ULL << 30;
     nvinfer1::INetworkDefinition* m_Network;
     nvinfer1::IBuilder* m_Builder ;
     nvinfer1::IHostMemory* m_ModelStream;
     nvinfer1::ICudaEngine* m_Engine;
     nvinfer1::IExecutionContext* m_Context;
     std::vector<void*> m_DeviceBuffers;
-    int m_InputBindingIndex;
     cudaStream_t m_CudaStream;
+    std::vector<std::string> m_IOTensorNames;
+    int m_InputTensorIndex{-1};
     //PluginFactory* m_PluginFactory;
    // std::unique_ptr<YoloTinyMaxpoolPaddingFormula> m_TinyMaxpoolPaddingFormula;
 
@@ -282,8 +288,10 @@ private:
 	void parse_cfg_blocks_v5(const  std::vector<std::map<std::string, std::string>> &vec_block_);
     void allocateBuffers();
     bool verifyYoloEngine();
+    bool setContextInputShape(const uint32_t batchSize);
     void destroyNetworkUtils(std::vector<nvinfer1::Weights>& trtWeights);
-    void writePlanFileToDisk();
+    void writePlanFileToDisk(nvinfer1::IHostMemory* plan);
+    void buildEnginePath(const NetworkInfo& networkInfo);
 
 private:
 	Timer _timer;

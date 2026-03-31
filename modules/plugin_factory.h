@@ -117,41 +117,47 @@ namespace nvinfer1
 		buffer += sizeof(T);
 	}
 
-	class YoloLayer : public IPluginV2
+	class YoloLayer : public IPluginV2DynamicExt
 	{
 	public:
 		explicit YoloLayer();
 		YoloLayer(const void* data, size_t length);
 		YoloLayer(const uint32_t& numBoxes, const uint32_t& numClasses, const uint32_t& grid_h_, const uint32_t &grid_w_);
 		int getNbOutputs() const noexcept override;
-		nvinfer1::Dims getOutputDimensions(int index, const nvinfer1::Dims* inputs,
-			int nbInputDims)noexcept override;
-		/*void configure(const nvinfer1::Dims* inputDims, int nbInputs, const nvinfer1::Dims* outputDims,
-					   int nbOutputs, int maxBatchSize)noexcept override;*/
-
-					   /*void configure(const nvinfer1::Dims* inputDims, int nbInputs,
-						   const nvinfer1::Dims* outputDims, int nbOutputs, int maxBatchSize)noexcept override;*/
+		nvinfer1::DimsExprs getOutputDimensions(int index, const nvinfer1::DimsExprs* inputs,
+			int nbInputDims, nvinfer1::IExprBuilder& exprBuilder)noexcept override;
 
 		int initialize()noexcept override;
 		void terminate()noexcept override;
-		size_t getWorkspaceSize(int maxBatchSize) const noexcept override;
+		size_t getWorkspaceSize(const nvinfer1::PluginTensorDesc* inputs, int nbInputs,
+			const nvinfer1::PluginTensorDesc* outputs, int nbOutputs) const noexcept override;
 		
-		int enqueue(int batchSize, const void* const* inputs, void* const* outputs, void* workspace,
+		int enqueue(const nvinfer1::PluginTensorDesc* inputDesc, const nvinfer1::PluginTensorDesc* outputDesc,
+			const void* const* inputs, void* const* outputs, void* workspace,
 			cudaStream_t stream) noexcept override;
 
 		size_t getSerializationSize() const noexcept  override;
 		void serialize(void* buffer) const noexcept  override;
+		nvinfer1::DataType getOutputDataType(int index, const nvinfer1::DataType* inputTypes,
+			int nbInputs) const noexcept override;
+		bool supportsFormatCombination(int pos, const nvinfer1::PluginTensorDesc* inOut, int nbInputs,
+			int nbOutputs) const noexcept override;
+		void configurePlugin(const nvinfer1::DynamicPluginTensorDesc* in, int nbInputs,
+			const nvinfer1::DynamicPluginTensorDesc* out, int nbOutputs) noexcept override;
+		bool isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const noexcept override;
+		bool canBroadcastInputAcrossBatch(int inputIndex) const noexcept override;
+		void attachToContext(cudnnContext* cudnnContext, cublasContext* cublasContext,
+			nvinfer1::IGpuAllocator* gpuAllocator) noexcept override;
+		void detachFromContext() noexcept override;
 		
 		const char* getPluginType() const noexcept  override
 		{
 			return "YOLO_TRT";
 		}
-		bool supportsFormat(DataType type, PluginFormat format) const noexcept override;
-		void configureWithFormat(const Dims* inputDims, int nbInputs, const Dims* outputDims, int nbOutputs, DataType type, PluginFormat format, int maxBatchSize) noexcept override;
 
 		const char* getPluginVersion() const noexcept  override
 		{
-			return "1.0";
+			return "2.0";
 		}
 
 		void setPluginNamespace(const char* pluginNamespace) noexcept  override
@@ -166,7 +172,7 @@ namespace nvinfer1
 		{
 			delete this;
 		}
-		IPluginV2* clone() const noexcept override;
+		IPluginV2DynamicExt* clone() const noexcept override;
 	private:
 	
 		std::string _s_plugin_namespace;

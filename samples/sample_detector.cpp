@@ -30,6 +30,7 @@ int main()
 	config_v5.file_model_weights = "../configs/yolov5-6.0/yolov5n.weights";
 	config_v5.calibration_image_list_file_txt = "../configs/calibration_images.txt";
 	config_v5.inference_precison = FP32;
+	config_v5.max_batch_size = 2;
 
 	std::unique_ptr<Detector> detector(new Detector());
 	detector->init(config_v5);

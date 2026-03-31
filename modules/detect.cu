@@ -51,6 +51,12 @@ namespace nvinfer1
 	Detect::~Detect()
 	{}
 
+	DimsExprs Detect::getOutputDimensions(int index, const DimsExprs* inputs, int nbInputDims,
+		IExprBuilder& exprBuilder) noexcept
+	{
+		return inputs[0];
+	}
+
 	inline __device__ float sigmoidGPU(const float& x) { return 1.0f / (1.0f + __expf(-x)); }
 
 	__global__ void gpu_detect_layer(const float *input_,
@@ -122,25 +128,36 @@ namespace nvinfer1
 		return cudaGetLastError();
 	}
 
-	int Detect::enqueue(int batchSize,
+	int Detect::enqueue(const PluginTensorDesc* inputDesc, const PluginTensorDesc* outputDesc,
 		const void* const* inputs,
 		void* const* outputs,
 		void* workspace,
 		cudaStream_t stream) noexcept
 	{
+		const int batchSize = inputDesc[0].dims.d[0];
 		NV_CUDA_CHECK(cuda_detect_layer(inputs[0], outputs[0], batchSize, _n_grid_h, _n_grid_w, _n_classes, _n_anchor, _n_output_size, stream));
 		return 0;
 	}
 
-
-	bool Detect::supportsFormat(DataType type, PluginFormat format) const noexcept
+	size_t Detect::getWorkspaceSize(const PluginTensorDesc* inputs, int nbInputs,
+		const PluginTensorDesc* outputs, int nbOutputs) const noexcept
 	{
-		return (type == DataType::kFLOAT && format == PluginFormat::kLINEAR);
+		return 0;
 	}
 
-	void Detect::configureWithFormat(const Dims* inputDims, int nbInputs, const Dims* outputDims, int nbOutputs, DataType type, PluginFormat format, int maxBatchSize) noexcept
+	DataType Detect::getOutputDataType(int index, const nvinfer1::DataType* inputTypes, int nbInputs) const noexcept
 	{
+		return DataType::kFLOAT;
+	}
 
+	bool Detect::isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const noexcept
+	{
+		return false;
+	}
+
+	bool Detect::canBroadcastInputAcrossBatch(int inputIndex) const noexcept
+	{
+		return false;
 	}
 
 	size_t Detect::getSerializationSize() const noexcept
@@ -160,11 +177,19 @@ namespace nvinfer1
 		assert(d == a + getSerializationSize());
 	}
 
-	void Detect::configurePlugin(const PluginTensorDesc* in, int nbInput, const PluginTensorDesc* out, int nbOutput)
+	void Detect::configurePlugin(const DynamicPluginTensorDesc* in, int nbInput, const DynamicPluginTensorDesc* out, int nbOutput) noexcept
 	{
 
 	}
-	IPluginV2* Detect::clone() const noexcept
+	void Detect::attachToContext(cudnnContext* cudnnContext, cublasContext* cublasContext, IGpuAllocator* gpuAllocator) noexcept
+	{
+	}
+
+	void Detect::detachFromContext() noexcept
+	{
+	}
+
+	IPluginV2DynamicExt* Detect::clone() const noexcept
 	{
 		Detect *p = new Detect(_n_anchor,_n_classes,_n_grid_h,_n_grid_w);
 		p->setPluginNamespace(_s_plugin_namespace.c_str());
@@ -190,7 +215,7 @@ namespace nvinfer1
 
 	const char* DetectPluginCreator::getPluginVersion() const noexcept
 	{
-		return "1.0";
+		return "2.0";
 	}
 
 	const PluginFieldCollection* DetectPluginCreator::getFieldNames() noexcept

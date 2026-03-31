@@ -1,29 +1,18 @@
-cmake_minimum_required(VERSION 3.1) # setting this is required
-project(yolov3-trt)            # this sets the project name
+cmake_minimum_required(VERSION 3.18)
 
+project(yolo-trt-consumer LANGUAGES CXX)
 
-
-add_executable(yolov3-trt samples/sample_detector.cpp)
-
-
-set(CMAKE_CXX_COMPILIER "/usr/bin/g++")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-write-strings")
-
-LINK_DIRECTORIES(${CMAKE_BINARY_DIR})
-message(STATUS "${CMAKE_BINARY_DIR}")
-message(STATUS "${CMAKE_SOURCE_DIR}")
-
-add_library(detector SHARED IMPORTED)
-set_target_properties(detector PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/libdetector.so)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(OpenCV REQUIRED)
 
+add_library(detector SHARED IMPORTED GLOBAL)
+set_target_properties(detector PROPERTIES
+  IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/lib/libdetector.so"
+  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/modules;${CMAKE_SOURCE_DIR}/extra"
+)
 
-target_include_directories(yolov3-trt PRIVATE modules/ ./)
-					  
-target_link_libraries(yolov3-trt detector opencv_core opencv_calib3d opencv_dnn)
-
-
-
-
-
+add_executable(yolo-trt-app "${CMAKE_SOURCE_DIR}/samples/sample_detector.cpp")
+target_link_libraries(yolo-trt-app PRIVATE detector ${OpenCV_LIBS})

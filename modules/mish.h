@@ -9,7 +9,7 @@
 //https://github.com/wang-xinyu/tensorrtx
 namespace nvinfer1
 {
-    class MishPlugin: public IPluginV2
+    class MishPlugin: public IPluginV2DynamicExt
     {
         public:
             explicit MishPlugin();
@@ -22,25 +22,25 @@ namespace nvinfer1
                 return 1;
             }
 
-            Dims getOutputDimensions(int index, const Dims* inputs, int nbInputDims) noexcept  override;
+            DimsExprs getOutputDimensions(int index, const DimsExprs* inputs, int nbInputDims,
+                IExprBuilder& exprBuilder) noexcept  override;
 
             int initialize() noexcept  override;
 
             virtual void terminate() noexcept  override {}
 
-            virtual size_t getWorkspaceSize(int maxBatchSize) const noexcept  override { return 0;}
+            virtual size_t getWorkspaceSize(const PluginTensorDesc* inputs, int nbInputs,
+                const PluginTensorDesc* outputs, int nbOutputs) const noexcept  override { return 0;}
 
-         //   virtual int enqueue(int batchSize, const void*const * inputs, void** outputs, void* workspace, cudaStream_t stream);
-			int enqueue(int batchSize, const void* const* inputs, void* const* outputs, void* workspace,
+			int enqueue(const PluginTensorDesc* inputDesc, const PluginTensorDesc* outputDesc,
+				const void* const* inputs, void* const* outputs, void* workspace,
 				cudaStream_t stream) noexcept override;
-			bool supportsFormat(DataType type, PluginFormat format) const noexcept override;
-			void configureWithFormat(const Dims* inputDims, int nbInputs, const Dims* outputDims, int nbOutputs, DataType type, PluginFormat format, int maxBatchSize) noexcept override;
 
             virtual size_t getSerializationSize() const noexcept  override;
 
             virtual void serialize(void* buffer) const noexcept  override;
 
-            bool supportsFormatCombination(int pos, const PluginTensorDesc* inOut, int nbInputs, int nbOutputs) const noexcept {
+            bool supportsFormatCombination(int pos, const PluginTensorDesc* inOut, int nbInputs, int nbOutputs) const noexcept override {
                 return inOut[pos].format == TensorFormat::kLINEAR && inOut[pos].type == DataType::kFLOAT;
             }
 
@@ -50,35 +50,35 @@ namespace nvinfer1
 
             void destroy()  noexcept override;
 
-            IPluginV2* clone() const noexcept  override;
+            IPluginV2DynamicExt* clone() const noexcept  override;
 
             void setPluginNamespace(const char* pluginNamespace) noexcept  override;
 
             const char* getPluginNamespace() const  noexcept override;
 
-            DataType getOutputDataType(int index, const nvinfer1::DataType* inputTypes, int nbInputs) const noexcept;
+            DataType getOutputDataType(int index, const nvinfer1::DataType* inputTypes, int nbInputs) const noexcept override;
 
-            bool isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const noexcept;
+            bool isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const noexcept override;
 
-            bool canBroadcastInputAcrossBatch(int inputIndex) const noexcept;
+            bool canBroadcastInputAcrossBatch(int inputIndex) const noexcept override;
 
             void attachToContext(
-                    cudnnContext* cudnnContext, cublasContext* cublasContext, IGpuAllocator* gpuAllocator)noexcept;
+                    cudnnContext* cudnnContext, cublasContext* cublasContext, IGpuAllocator* gpuAllocator)noexcept override;
 
-            void configurePlugin(const PluginTensorDesc* in, int nbInput, const PluginTensorDesc* out, int nbOutput)noexcept;
+            void configurePlugin(const DynamicPluginTensorDesc* in, int nbInput, const DynamicPluginTensorDesc* out, int nbOutput)noexcept override;
 
-            void detachFromContext()noexcept;
+            void detachFromContext()noexcept override;
 
             int input_size_;
         private:
             void forwardGpu(const float *const * inputs, float* output, cudaStream_t stream, int batchSize = 1);
             int thread_count_ = 256;
-            const char* mPluginNamespace;
+            std::string mPluginNamespace;
     };
 
     class MishPluginCreator : public IPluginCreator
     {
-        public:
+	        public:
             MishPluginCreator();
 
             ~MishPluginCreator() override = default;
@@ -97,7 +97,7 @@ namespace nvinfer1
 
 			const char* getPluginNamespace() const noexcept  override;
 
-        private:
+	        private:
             std::string mNamespace;
             static PluginFieldCollection mFC;
             static std::vector<PluginField> mPluginAttributes;

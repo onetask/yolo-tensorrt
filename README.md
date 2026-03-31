@@ -29,6 +29,19 @@ The project is the encapsulation  of nvidia official yolo-tensorrt [implementati
 - [x] ubuntu 18.04
 - [x] L4T (Jetson platform)
 
+## JetPack 6.0
+
+This branch targets JetPack 6.0 on Jetson Orin only.
+
+- Jetson Linux 36.3 / Ubuntu 22.04
+- CUDA 12.2
+- TensorRT 8.6
+- cuDNN 8.9
+
+The TensorRT runtime has been migrated to explicit-batch engines for JP6. Old JetPack 5.x `.engine`
+files are intentionally incompatible with this branch and will be regenerated with a JP6-specific
+cache name.
+
 <details><summary><b>BENCHMARK</b></summary>
 
 #### x86 (inference time)
@@ -103,6 +116,9 @@ cmake ..
 make
 ./yolo-trt
 ```
+
+For JetPack 6.0 Orin builds, make sure TensorRT 8.6 is available in the system library path before
+running `cmake ..`.
 ## API
 
 ```c++
@@ -112,11 +128,17 @@ struct Config
 
 	std::string file_model_weights = "configs/yolov4.weights";
 
+	std::string engine_file_path = "";
+
 	float detect_thresh = 0.9;
 
 	ModelType net_type = YOLOV4;
 
-	Precision inference_precison = INT8;
+	Precision inference_precison = FP32;
+
+	int max_batch_size = 1;
+
+	std::size_t workspace_size_bytes = 1ULL << 30;
 	
 	int gpu_id = 0;
 
@@ -141,6 +163,12 @@ private:
 	Impl *_impl;
 };
 ```
+
+Notes:
+
+- `max_batch_size` is now the runtime batch contract for engine generation and inference.
+- `workspace_size_bytes` controls the TensorRT workspace pool size on JP6.
+- Leave `engine_file_path` empty to use the automatic JP6 cache naming scheme.
 
 ## REFERENCE
 

@@ -25,13 +25,11 @@ SOFTWARE.
 
 #include "trt_utils.h"
 #include <NvInferRuntimeCommon.h>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 using namespace nvinfer1;
 REGISTER_TENSORRT_PLUGIN(MishPluginCreator);
-REGISTER_TENSORRT_PLUGIN(ChunkPluginCreator);
-REGISTER_TENSORRT_PLUGIN(HardswishPluginCreator);
 REGISTER_TENSORRT_PLUGIN(YoloLayerPluginCreator);
 
 cv::Mat blobFromDsImages(const std::vector<DsImage>& inputImages,
@@ -83,7 +81,7 @@ float clamp(const float val, const float minVal, const float maxVal)
 
 bool fileExists(const std::string fileName, bool verbose)
 {
-    if (!std::experimental::filesystem::exists(std::experimental::filesystem::path(fileName)))
+    if (!std::filesystem::exists(std::filesystem::path(fileName)))
     {
         if (verbose) std::cout << "File does not exist : " << fileName << std::endl;
         return false;
@@ -329,11 +327,17 @@ nvinfer1::ICudaEngine* loadTRTEngine(const std::string planFilePath, /*PluginFac
 {
     // reading the model in memory
     std::cout << "Loading TRT Engine..." << std::endl;
-    assert(fileExists(planFilePath));
+    if (!fileExists(planFilePath))
+    {
+        return nullptr;
+    }
     std::stringstream trtModelStream;
     trtModelStream.seekg(0, trtModelStream.beg);
     std::ifstream cache(planFilePath,std::ios::binary | std::ios::in);
-    assert(cache.good());
+    if (!cache.good())
+    {
+        return nullptr;
+    }
     trtModelStream << cache.rdbuf();
     cache.close();
 
@@ -348,7 +352,12 @@ nvinfer1::ICudaEngine* loadTRTEngine(const std::string planFilePath, /*PluginFac
     nvinfer1::ICudaEngine* engine
         = runtime->deserializeCudaEngine(modelMem, modelSize/*, pluginFactory*/);
     free(modelMem);
-    runtime->destroy();
+    delete runtime;
+    if (!engine)
+    {
+        std::cout << "Unable to deserialize engine: " << planFilePath << std::endl;
+        return nullptr;
+    }
     std::cout << "Loading Complete!" << std::endl;
 
     return engine;
@@ -444,15 +453,16 @@ void displayDimType(const nvinfer1::Dims d)
 int getNumChannels(nvinfer1::ITensor* t)
 {
     nvinfer1::Dims d = t->getDimensions();
-    assert(d.nbDims == 3);
+    assert(d.nbDims == 3 || d.nbDims == 4);
 
-    return d.d[0];
+    return d.d[d.nbDims - 3];
 }
 
 uint64_t get3DTensorVolume(nvinfer1::Dims inputDims)
 {
-    assert(inputDims.nbDims == 3);
-    return inputDims.d[0] * inputDims.d[1] * inputDims.d[2];
+    assert(inputDims.nbDims == 3 || inputDims.nbDims == 4);
+	const int startDim = inputDims.nbDims - 3;
+    return inputDims.d[startDim] * inputDims.d[startDim + 1] * inputDims.d[startDim + 2];
 }
 
 nvinfer1::ILayer* netAddMaxpool(int layerIdx, std::map<std::string, std::string>& block,
@@ -664,23 +674,12 @@ nvinfer1::ILayer* net_conv_bn_mish(int layerIdx,
 	bn->setName(bnLayerName.c_str());
 	/***** ACTIVATION LAYER *****/
 	/****************************/
-	auto creator = getPluginRegistry()->getPluginCreator("Mish_TRT", "1");
+	auto creator = getPluginRegistry()->getPluginCreator("Mish_TRT", "2.0");
 	const nvinfer1::PluginFieldCollection* pluginData = creator->getFieldNames();
 	nvinfer1::IPluginV2 *pluginObj = creator->createPlugin(("mish" + std::to_string(layerIdx)).c_str(), pluginData);
 	nvinfer1::ITensor* inputTensors[] = { bn->getOutput(0) };
 	auto mish = network->addPluginV2(&inputTensors[0], 1, *pluginObj);
 	return mish;
-}
-
-nvinfer1::ILayer * layer_split(const int n_layer_index_,
-	nvinfer1::ITensor *input_,
-	nvinfer1::INetworkDefinition* network)
-{
-	auto creator = getPluginRegistry()->getPluginCreator("CHUNK_TRT", "1.0");
-	const nvinfer1::PluginFieldCollection* pluginData = creator->getFieldNames();
-	nvinfer1::IPluginV2 *pluginObj = creator->createPlugin(("chunk" + std::to_string(n_layer_index_)).c_str(), pluginData);
-	auto chunk = network->addPluginV2(&input_, 1, *pluginObj);
-	return chunk;
 }
 
 std::vector<int> parse_int_list(const std::string s_args_)
@@ -711,8 +710,8 @@ std::vector<int> parse_int_list(const std::string s_args_)
 std::vector<int> dims2chw(const nvinfer1::Dims d)
 {
 	std::vector<int> chw;
-	assert(d.nbDims >= 1);
-	for (int i = 0; i < d.nbDims; ++i)
+	assert(d.nbDims == 3 || d.nbDims == 4);
+	for (int i = d.nbDims - 3; i < d.nbDims; ++i)
 	{
 		chw.push_back(d.d[i]);
 	}
@@ -822,8 +821,11 @@ nvinfer1::ILayer * layer_act(nvinfer1::ITensor* input_,
 	}
 	else if (s_act_ == "hardswish")
 	{
-		nvinfer1::IPluginV2 *hardswish_plugin = new nvinfer1::Hardswish();
-		auto act = network_->addPluginV2(&input_, 1, *hardswish_plugin);
+		auto hardSigmoid = network_->addActivation(*input_, nvinfer1::ActivationType::kHARD_SIGMOID);
+		assert(hardSigmoid != nullptr);
+		hardSigmoid->setAlpha(1.0f / 6.0f);
+		hardSigmoid->setBeta(0.5f);
+		auto act = network_->addElementWise(*input_, *hardSigmoid->getOutput(0), ElementWiseOperation::kPROD);
 		assert(act != nullptr);
 		return act;
 	}
@@ -1378,11 +1380,10 @@ nvinfer1::ILayer* netAddUpsample(int layerIdx, std::map<std::string, std::string
 {
     assert(block.at("type") == "upsample");
     nvinfer1::Dims inpDims = input->getDimensions();
-    assert(inpDims.nbDims == 3);
-   // assert(inpDims.d[1] == inpDims.d[2]);
+    assert(inpDims.nbDims == 3 || inpDims.nbDims == 4);
     int n_scale = std::stoi(block.at("stride"));
 
-	int c1 = inpDims.d[0];
+	int c1 = inpDims.d[inpDims.nbDims - 3];
 	float *deval = new float[c1*n_scale*n_scale];
 	for (int i = 0; i < c1*n_scale*n_scale; i++)
 	{
