@@ -141,11 +141,9 @@ namespace nvinfer1
 		nvinfer1::DataType getOutputDataType(int index, const nvinfer1::DataType* inputTypes,
 			int nbInputs) const noexcept override;
 		bool supportsFormatCombination(int pos, const nvinfer1::PluginTensorDesc* inOut, int nbInputs,
-			int nbOutputs) const noexcept override;
+			int nbOutputs) noexcept override;
 		void configurePlugin(const nvinfer1::DynamicPluginTensorDesc* in, int nbInputs,
 			const nvinfer1::DynamicPluginTensorDesc* out, int nbOutputs) noexcept override;
-		bool isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const noexcept override;
-		bool canBroadcastInputAcrossBatch(int inputIndex) const noexcept override;
 		void attachToContext(cudnnContext* cudnnContext, cublasContext* cublasContext,
 			nvinfer1::IGpuAllocator* gpuAllocator) noexcept override;
 		void detachFromContext() noexcept override;

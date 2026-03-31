@@ -40,7 +40,7 @@ namespace nvinfer1
 
             virtual void serialize(void* buffer) const noexcept  override;
 
-            bool supportsFormatCombination(int pos, const PluginTensorDesc* inOut, int nbInputs, int nbOutputs) const noexcept override {
+            bool supportsFormatCombination(int pos, const PluginTensorDesc* inOut, int nbInputs, int nbOutputs) noexcept override {
                 return inOut[pos].format == TensorFormat::kLINEAR && inOut[pos].type == DataType::kFLOAT;
             }
 
@@ -57,10 +57,6 @@ namespace nvinfer1
             const char* getPluginNamespace() const  noexcept override;
 
             DataType getOutputDataType(int index, const nvinfer1::DataType* inputTypes, int nbInputs) const noexcept override;
-
-            bool isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const noexcept override;
-
-            bool canBroadcastInputAcrossBatch(int inputIndex) const noexcept override;
 
             void attachToContext(
                     cudnnContext* cudnnContext, cublasContext* cublasContext, IGpuAllocator* gpuAllocator)noexcept override;

@@ -150,16 +150,6 @@ namespace nvinfer1
 		return DataType::kFLOAT;
 	}
 
-	bool Detect::isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const noexcept
-	{
-		return false;
-	}
-
-	bool Detect::canBroadcastInputAcrossBatch(int inputIndex) const noexcept
-	{
-		return false;
-	}
-
 	size_t Detect::getSerializationSize() const noexcept
 	{
 		return sizeof(_n_anchor) + sizeof(_n_classes) + sizeof(_n_grid_h) + sizeof(_n_grid_w)

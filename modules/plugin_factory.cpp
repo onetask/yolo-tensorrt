@@ -107,7 +107,7 @@ namespace nvinfer1
 		assert(d == a + getSerializationSize());
 	}
 
-	bool YoloLayer::supportsFormatCombination(int pos, const PluginTensorDesc* inOut, int nbInputs, int nbOutputs) const noexcept
+	bool YoloLayer::supportsFormatCombination(int pos, const PluginTensorDesc* inOut, int nbInputs, int nbOutputs) noexcept
 	{
 		return inOut[pos].type == DataType::kFLOAT && inOut[pos].format == TensorFormat::kLINEAR;
 	}
@@ -120,16 +120,6 @@ namespace nvinfer1
 	DataType YoloLayer::getOutputDataType(int index, const DataType* inputTypes, int nbInputs) const noexcept
 	{
 		return DataType::kFLOAT;
-	}
-
-	bool YoloLayer::isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const noexcept
-	{
-		return false;
-	}
-
-	bool YoloLayer::canBroadcastInputAcrossBatch(int inputIndex) const noexcept
-	{
-		return false;
 	}
 
 	void YoloLayer::attachToContext(cudnnContext* cudnnContext, cublasContext* cublasContext,

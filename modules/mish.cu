@@ -61,18 +61,6 @@ namespace nvinfer1
         return DataType::kFLOAT;
     }
 
-    // Return true if output tensor is broadcast across a batch.
-    bool MishPlugin::isOutputBroadcastAcrossBatch(int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const noexcept
-    {
-        return false;
-    }
-
-    // Return true if plugin can use input that is broadcast across batch without replication.
-    bool MishPlugin::canBroadcastInputAcrossBatch(int inputIndex) const noexcept
-    {
-        return false;
-    }
-
     void MishPlugin::configurePlugin(const DynamicPluginTensorDesc* in, int nbInput, const DynamicPluginTensorDesc* out, int nbOutput)noexcept
     {
         const auto& dims = in[0].desc.dims;
