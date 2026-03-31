@@ -531,13 +531,13 @@ nvinfer1::ILayer* netAddConvLinear(int layerIdx, std::map<std::string, std::stri
     }
     convWt.values = val;
     trtWeights.push_back(convWt);
-    nvinfer1::IConvolutionLayer* conv = network->addConvolution(
+    nvinfer1::IConvolutionLayer* conv = network->addConvolutionNd(
         *input, filters, nvinfer1::DimsHW{kernelSize, kernelSize}, convWt, convBias);
     assert(conv != nullptr);
     std::string convLayerName = "conv_" + std::to_string(layerIdx);
     conv->setName(convLayerName.c_str());
-    conv->setStride(nvinfer1::DimsHW{stride, stride});
-    conv->setPadding(nvinfer1::DimsHW{pad, pad});
+    conv->setStrideNd(nvinfer1::DimsHW{stride, stride});
+    conv->setPaddingNd(nvinfer1::DimsHW{pad, pad});
 
     return conv;
 }
@@ -629,13 +629,13 @@ nvinfer1::ILayer* net_conv_bn_mish(int layerIdx,
 	trtWeights.push_back(convWt);
 	nvinfer1::Weights convBias{ nvinfer1::DataType::kFLOAT, nullptr, 0 };
 	trtWeights.push_back(convBias);
-	nvinfer1::IConvolutionLayer* conv = network->addConvolution(
+	nvinfer1::IConvolutionLayer* conv = network->addConvolutionNd(
 		*input, filters, nvinfer1::DimsHW{ kernelSize, kernelSize }, convWt, convBias);
 	assert(conv != nullptr);
 	std::string convLayerName = "conv_" + std::to_string(layerIdx);
 	conv->setName(convLayerName.c_str());
-	conv->setStride(nvinfer1::DimsHW{ stride, stride });
-	conv->setPadding(nvinfer1::DimsHW{ pad, pad });
+	conv->setStrideNd(nvinfer1::DimsHW{ stride, stride });
+	conv->setPaddingNd(nvinfer1::DimsHW{ pad, pad });
 
 	/***** BATCHNORM LAYER *****/
 	/***************************/
@@ -1311,7 +1311,7 @@ nvinfer1::ILayer* netAddConvBNLeaky(int layerIdx,
     trtWeights.push_back(convWt);
     nvinfer1::Weights convBias{nvinfer1::DataType::kFLOAT, nullptr, 0};
     trtWeights.push_back(convBias);
-    nvinfer1::IConvolutionLayer* conv = network->addConvolution(
+    nvinfer1::IConvolutionLayer* conv = network->addConvolutionNd(
         *input,
 		filters,
 		nvinfer1::DimsHW{kernelSize, kernelSize},
@@ -1320,8 +1320,8 @@ nvinfer1::ILayer* netAddConvBNLeaky(int layerIdx,
     assert(conv != nullptr);
     std::string convLayerName = "conv_" + std::to_string(layerIdx);
     conv->setName(convLayerName.c_str());
-    conv->setStride(nvinfer1::DimsHW{stride, stride});
-    conv->setPadding(nvinfer1::DimsHW{pad, pad});
+    conv->setStrideNd(nvinfer1::DimsHW{stride, stride});
+    conv->setPaddingNd(nvinfer1::DimsHW{pad, pad});
 
     /***** BATCHNORM LAYER *****/
     /***************************/

@@ -1370,7 +1370,8 @@ void Yolo::allocateBuffers()
 			tensor.bindingIndex = index;
 			NV_CUDA_CHECK(cudaMalloc(&m_DeviceBuffers.at(index),
 				m_MaxBatchSize * tensor.volume * sizeof(float)));
-			NV_CUDA_CHECK(cudaMallocHost(&tensor.hostBuffer, tensor.volume * m_MaxBatchSize * sizeof(float)));
+			NV_CUDA_CHECK(cudaMallocHost(reinterpret_cast<void**>(&tensor.hostBuffer),
+				tensor.volume * m_MaxBatchSize * sizeof(float)));
 			assert(m_Context->setTensorAddress(tensorName, m_DeviceBuffers.at(index)));
 			break;
 		}
@@ -1382,7 +1383,7 @@ void Yolo::allocateBuffers()
 bool Yolo::verifyYoloEngine()
 {
     assert((m_Engine->getNbIOTensors() == static_cast<int32_t>(1 + m_OutputTensors.size()))
-            && "Binding info doesn't match between cfg and engine file \n"));
+            && "Binding info doesn't match between cfg and engine file \n");
 
     assert(m_Engine->getTensorIOMode(m_InputBlobName.c_str()) == nvinfer1::TensorIOMode::kINPUT
            && "Incorrect input tensor mode \n");
