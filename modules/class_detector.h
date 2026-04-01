@@ -43,7 +43,7 @@ struct Config
 
 	Precision	inference_precison				= FP32;
 
-	int	max_batch_size							= 1;
+	int	max_batch_size							= 0;
 
 	std::size_t workspace_size_bytes			= 1ULL << 30;
 	

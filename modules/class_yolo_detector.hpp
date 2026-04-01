@@ -106,7 +106,7 @@ private:
 		_yolo_info.precision = _vec_precision[_config.inference_precison];
 		_yolo_info.deviceType = "kGPU";
 		_yolo_info.enginePath = _config.engine_file_path;
-		_yolo_info.maxBatchSize = std::max(1, _config.max_batch_size);
+		_yolo_info.maxBatchSize = _config.max_batch_size > 0 ? _config.max_batch_size : 0;
 		_yolo_info.workspaceSizeBytes = _config.workspace_size_bytes;
 		auto npos = _yolo_info.wtsFilePath.find(".weights");
 		assert(npos != std::string::npos
