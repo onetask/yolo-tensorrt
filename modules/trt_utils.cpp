@@ -323,7 +323,7 @@ std::vector<BBoxInfo> nonMaximumSuppression(const float nmsThresh, std::vector<B
 }
 
 nvinfer1::ICudaEngine* loadTRTEngine(const std::string planFilePath, /*PluginFactory* pluginFactory,*/
-                                     Logger& logger)
+                                     nvinfer1::IRuntime& runtime)
 {
     // reading the model in memory
     std::cout << "Loading TRT Engine..." << std::endl;
@@ -348,11 +348,9 @@ nvinfer1::ICudaEngine* loadTRTEngine(const std::string planFilePath, /*PluginFac
     void* modelMem = malloc(modelSize);
     trtModelStream.read((char*) modelMem, modelSize);
 
-    nvinfer1::IRuntime* runtime = nvinfer1::createInferRuntime(logger);
     nvinfer1::ICudaEngine* engine
-        = runtime->deserializeCudaEngine(modelMem, modelSize/*, pluginFactory*/);
+        = runtime.deserializeCudaEngine(modelMem, modelSize/*, pluginFactory*/);
     free(modelMem);
-    delete runtime;
     if (!engine)
     {
         std::cout << "Unable to deserialize engine: " << planFilePath << std::endl;

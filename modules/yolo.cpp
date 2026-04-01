@@ -49,6 +49,7 @@ Yolo::Yolo( const NetworkInfo& networkInfo, const InferParams& inferParams) :
 	m_Network(nullptr),
 	m_Builder(nullptr),
 	m_ModelStream(nullptr),
+	m_Runtime(nullptr),
 	m_Engine(nullptr),
 	m_Context(nullptr),
 	m_CudaStream(nullptr),
@@ -125,14 +126,16 @@ Yolo::Yolo( const NetworkInfo& networkInfo, const InferParams& inferParams) :
 		buildEngine();
 	}
 
-	m_Engine = loadTRTEngine(m_EnginePath, m_Logger);
+	m_Runtime = nvinfer1::createInferRuntime(m_Logger);
+	assert(m_Runtime != nullptr);
+	m_Engine = loadTRTEngine(m_EnginePath, *m_Runtime);
 	if (!m_Engine)
 	{
 		std::cout << "Existing engine is incompatible with the current TensorRT stack. Rebuilding "
 		          << m_EnginePath << std::endl;
 		std::filesystem::remove(std::filesystem::path(m_EnginePath));
 		buildEngine();
-		m_Engine = loadTRTEngine(m_EnginePath, m_Logger);
+		m_Engine = loadTRTEngine(m_EnginePath, *m_Runtime);
 	}
 	assert(m_Engine != nullptr);
 	m_Context = m_Engine->createExecutionContext();
@@ -150,6 +153,7 @@ Yolo::~Yolo()
     if (m_CudaStream) NV_CUDA_CHECK(cudaStreamDestroy(m_CudaStream));
     destroyTrtObject(m_Context);
     destroyTrtObject(m_Engine);
+    destroyTrtObject(m_Runtime);
 
    /* if (m_PluginFactory)
     {
